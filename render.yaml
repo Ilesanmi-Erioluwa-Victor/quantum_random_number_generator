@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: qrng-dashboard
+    env: node
+    buildCommand: npm install
+    startCommand: npm run server
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: MONGODB_URI
+        sync: false
+      - key: IBMQ_API_KEY
+        sync: false
+      - key: IBMQ_INSTANCE
+        sync: false
+      - key: IBMQ_BACKEND
+        sync: false

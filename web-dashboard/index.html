@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QRNG - Quantum Random Number Generator Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="container header-content">
+      <div>
+        <h1>&#x3A8; QRNG Dashboard</h1>
+        <p class="subtitle">Quantum Random Number Generator &bull; Secure Communications</p>
+      </div>
+      <div class="status-badge" id="statusBadge">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Loading...</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card" id="liveGeneration">
+      <h2>Live Bit Generation</h2>
+      <div class="control-row">
+        <label>Bits: <input type="number" id="bitCount" value="128" min="8" max="4096"></label>
+        <select id="sourceSelect">
+          <option value="simulated">Simulated QRNG</option>
+          <option value="qiskit">IBM Quantum (Qiskit)</option>
+        </select>
+        <button id="generateBtn" class="btn btn-primary">Generate</button>
+        <button id="streamBtn" class="btn btn-secondary">Start Stream</button>
+      </div>
+      <div class="bitstream-container">
+        <div id="bitstream" class="bitstream">Click "Generate" to produce random bits</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat"><span class="stat-label">Bits:</span> <span id="statBits">0</span></div>
+        <div class="stat"><span class="stat-label">Ones:</span> <span id="statOnes">0</span></div>
+        <div class="stat"><span class="stat-label">Zeros:</span> <span id="statZeros">0</span></div>
+        <div class="stat"><span class="stat-label">Ratio:</span> <span id="statRatio">0</span></div>
+      </div>
+    </section>
+
+    <section class="card" id="randomnessTests">
+      <h2>Randomness Tests</h2>
+      <div class="control-row">
+        <label>Bits to test: <input type="number" id="testBitCount" value="10000" min="100" max="100000"></label>
+        <button id="runTestsBtn" class="btn btn-primary">Run Tests</button>
+      </div>
+      <div id="testResults" class="test-grid">
+        <div class="test-placeholder">Run randomness tests to see results</div>
+      </div>
+      <div class="chart-container">
+        <canvas id="testChart"></canvas>
+      </div>
+    </section>
+
+    <section class="card" id="entropySection">
+      <h2>Entropy Analysis</h2>
+      <div class="entropy-container">
+        <div class="entropy-meter">
+          <div class="meter-label">Entropy per Bit</div>
+          <div class="meter-bar">
+            <div class="meter-fill" id="entropyFill" style="width: 0%"></div>
+          </div>
+          <div class="meter-value" id="entropyValue">0.000</div>
+        </div>
+        <div class="entropy-distribution">
+          <canvas id="entropyChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="encryptionDemo">
+      <h2>Secure Communications Demo</h2>
+      <p class="section-desc">Military-grade encryption using QRNG-generated keys (AES-256-GCM)</p>
+      <div class="encrypt-row">
+        <input type="text" id="messageInput" placeholder="Enter a message to encrypt..." class="input-field">
+        <button id="encryptBtn" class="btn btn-primary">Encrypt</button>
+      </div>
+      <div id="encryptResult" class="encrypt-result">
+        <div class="result-row"><span class="label">Session Key:</span> <code id="resultKey">-</code></div>
+        <div class="result-row"><span class="label">Ciphertext:</span> <code id="resultCiphertext">-</code></div>
+        <div class="result-row"><span class="label">Auth Tag:</span> <code id="resultAuthTag">-</code></div>
+        <div class="result-row"><span class="label">Decrypted:</span> <code id="resultDecrypted">-</code></div>
+        <div class="result-row"><span class="label">Integrity:</span> <span id="resultIntegrity" class="pass">-</span></div>
+      </div>
+    </section>
+
+    <section class="card" id="qiskitStatus">
+      <h2>IBM Quantum Status</h2>
+      <div class="qiskit-info">
+        <div class="info-row"><span>Status:</span> <span id="qiskitStatus">Checking...</span></div>
+        <div class="info-row"><span>Backend:</span> <span id="qiskitBackend">-</span></div>
+        <div class="info-row"><span>Jobs Submitted:</span> <span id="qiskitJobs">0</span></div>
+        <div class="info-row"><span>Last Job:</span> <span id="qiskitLastJob">-</span></div>
+      </div>
+      <div class="chart-container-small">
+        <canvas id="historyChart"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>Quantum Random Number Generator &mdash; School Project</p>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script src="js/charts.js"></script>
+</body>
+</html>
