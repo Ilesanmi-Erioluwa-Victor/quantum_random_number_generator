@@ -13,17 +13,8 @@ import { QiskitJob } from '../../db/models/QiskitJob.js';
 
 const router = Router();
 
-router.get('/qiskit/backends', async (req, res) => {
-  try {
-    const bridge = new QiskitBridge();
-    if (!bridge.isConfigured) {
-      return res.json({ configured: false, backends: [] });
-    }
-    const backends = await bridge.listBackends();
-    res.json({ configured: true, backends: backends.map(b => b.name) });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+router.get('/health', (req, res) => {
+  res.json({ ok: true });
 });
 
 router.get('/status', (req, res) => {
@@ -33,6 +24,20 @@ router.get('/status', (req, res) => {
     qiskitConfigured: !!process.env.IBMQ_API_KEY,
     version: '1.0.0',
   });
+});
+
+router.get('/qiskit/backends', async (req, res) => {
+  try {
+    const bridge = new QiskitBridge();
+    if (!bridge.isConfigured) {
+      return res.json({ configured: false, backends: [] });
+    }
+    const backends = await bridge.listBackends();
+    const names = backends.map(b => (typeof b === 'string' ? b : b.name)).filter(Boolean);
+    res.json({ configured: true, backends: names });
+  } catch (err) {
+    res.json({ configured: false, backends: [], error: err.message });
+  }
 });
 
 router.post('/generate', async (req, res) => {
@@ -51,7 +56,7 @@ router.post('/generate', async (req, res) => {
         metadata = { nQubits: result.nQubits, shots: result.shots, jobId: result.jobId };
       } catch (qErr) {
         if (qErr.message.includes('403') || qErr.message.includes('not authorized')) {
-          return res.status(403).json({ error: 'Access denied to backend. Try a different backend or check your IBM Quantum plan.', hint: 'Use GET /api/qiskit/backends to list available backends' });
+          return res.status(403).json({ error: 'Access denied to backend. Check IBM Quantum plan or use a different backend.', hint: 'Use GET /api/qiskit/backends to see available backends' });
         }
         throw qErr;
       }
@@ -127,7 +132,9 @@ router.post('/decrypt', async (req, res) => {
 
 router.get('/history/:type', async (req, res) => {
   try {
-    await connectDB();
+    if (!isDBConnected()) {
+      return res.json([]);
+    }
     const { type } = req.params;
     const { limit = 20 } = req.query;
     let data;

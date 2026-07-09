@@ -86,7 +86,11 @@ export class QiskitBridge {
     if (!resp.ok) {
       throw new Error(`Failed to list backends: ${resp.status} ${await resp.text()}`);
     }
-    return resp.json();
+    const body = await resp.json();
+    if (Array.isArray(body)) return body;
+    if (body.backends && Array.isArray(body.backends)) return body.backends;
+    if (body.results && Array.isArray(body.results)) return body.results;
+    throw new Error('Unexpected backends response format');
   }
 
   async generateBits(n, options = {}) {

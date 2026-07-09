@@ -26,13 +26,18 @@ app.get('/', (req, res) => {
   res.sendFile('index.html', { root: 'web-dashboard' });
 });
 
-async function start() {
-  await connectDB();
+app.use((err, req, res, next) => {
+  console.warn('Express error:', err.message);
+  res.status(500).json({ error: err.message });
+});
+
+function start() {
   app.listen(PORT, () => {
     console.log(`QRNG Dashboard: http://localhost:${PORT}`);
     console.log(`API:            http://localhost:${PORT}/api`);
     console.log(`Status:         http://localhost:${PORT}/api/status`);
   });
+  connectDB();
 }
 
 start();

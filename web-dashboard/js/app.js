@@ -125,17 +125,18 @@ async function encryptMessage() {
 
 async function checkStatus() {
   try {
-    const data = await apiCall('/status');
+    const data = await apiCall('/health');
+    if (!data.ok) throw new Error('not ok');
     const dot = document.getElementById('statusDot');
-    const text = document.getElementById('statusText');
     dot.className = 'status-dot online';
-    text.textContent = 'Online';
-    document.getElementById('qiskitBackend').textContent = data.qiskitConfigured ? 'Configured' : 'Not configured';
-    document.getElementById('qiskitStatus').textContent = data.qiskitConfigured ? 'Ready' : 'Simulator only';
+    document.getElementById('statusText').textContent = 'Online';
+    const status = await apiCall('/status');
+    document.getElementById('qiskitBackend').textContent = status.qiskitConfigured ? 'Configured' : 'Not configured';
+    document.getElementById('qiskitStatus').textContent = status.qiskitConfigured ? 'Ready' : 'Simulator only';
   } catch (err) {
     const dot = document.getElementById('statusDot');
     dot.className = 'status-dot error';
-    document.getElementById('statusText').textContent = 'Error';
+    document.getElementById('statusText').textContent = 'Disconnected';
   }
 }
 
@@ -171,7 +172,6 @@ document.getElementById('runTestsBtn').addEventListener('click', runTests);
 document.getElementById('encryptBtn').addEventListener('click', encryptMessage);
 document.getElementById('streamBtn').addEventListener('click', toggleStream);
 
+setInterval(checkStatus, 10000);
 checkStatus();
-setInterval(checkStatus, 15000);
 listQiskitBackends();
-setInterval(listQiskitBackends, 30000);
