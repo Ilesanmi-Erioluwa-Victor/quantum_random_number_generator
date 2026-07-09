@@ -8,7 +8,7 @@
     "qrng": "./src/cli/index.js"
   },
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/server/index.js",
     "cli": "node src/cli/index.js",
     "server": "node src/server/index.js",
     "test": "node --experimental-vm-modules tests/run.js",
