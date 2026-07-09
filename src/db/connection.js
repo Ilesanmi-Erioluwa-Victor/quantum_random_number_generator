@@ -2,15 +2,21 @@ import mongoose from 'mongoose';
 
 let isConnected = false;
 
+mongoose.connection.on('error', () => {});
+mongoose.connection.on('reconnectFailed', () => {});
+
 export async function connectDB(uri) {
   if (isConnected) return;
-  const connectionUri = uri || process.env.MONGODB_URI;
+  const connectionUri = uri || process.env.MONGODB_URI || 'mongodb://localhost:27017/qrng';
   try {
-    await mongoose.connect(connectionUri);
+    mongoose.set('autoReconnect', false);
+    await mongoose.connect(connectionUri, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+      heartbeatFrequencyMS: 10000,
+    });
     isConnected = true;
-    console.log('MongoDB connected');
   } catch (err) {
-    console.warn('MongoDB connection failed, running without database:', err.message);
     isConnected = false;
   }
 }

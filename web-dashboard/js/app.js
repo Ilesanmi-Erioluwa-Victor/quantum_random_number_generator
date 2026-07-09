@@ -7,13 +7,16 @@ async function apiCall(endpoint, options = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}));
+    throw new Error(body.error || body.hint || `HTTP ${resp.status}`);
+  }
   return resp.json();
 }
 
 function updateBitStream(bits) {
   const el = document.getElementById('bitstream');
-  const bitStr = bits.join('');
-  el.textContent = bitStr;
+  el.textContent = bits.join('');
   document.getElementById('statBits').textContent = bits.length;
   const ones = bits.filter(b => b === 1).length;
   const zeros = bits.length - ones;
@@ -23,26 +26,45 @@ function updateBitStream(bits) {
 }
 
 async function generateBits() {
+  const btn = document.getElementById('generateBtn');
   const count = parseInt(document.getElementById('bitCount').value);
   const source = document.getElementById('sourceSelect').value;
-  const data = await apiCall('/generate', {
-    method: 'POST',
-    body: JSON.stringify({ bits: count, source }),
-  });
-  if (data.error) { console.error(data.error); return; }
-  updateBitStream(data.bits);
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  document.getElementById('bitstream').textContent = '';
+  try {
+    const data = await apiCall('/generate', {
+      method: 'POST',
+      body: JSON.stringify({ bits: count, source }),
+    });
+    updateBitStream(data.bits);
+  } catch (err) {
+    document.getElementById('bitstream').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate';
+  }
 }
 
 async function runTests() {
+  const btn = document.getElementById('runTestsBtn');
   const count = parseInt(document.getElementById('testBitCount').value);
-  const data = await apiCall('/test', {
-    method: 'POST',
-    body: JSON.stringify({ bits: count }),
-  });
-  if (data.error) { console.error(data.error); return; }
-  renderTestResults(data);
-  updateEntropyMeter(data);
-  updateTestChart(data);
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+  try {
+    const data = await apiCall('/test', {
+      method: 'POST',
+      body: JSON.stringify({ bits: count }),
+    });
+    renderTestResults(data);
+    updateEntropyMeter(data);
+    updateTestChart(data);
+  } catch (err) {
+    document.getElementById('testResults').innerHTML = `<div class="test-item"><div class="test-status fail">ERROR</div><div class="test-name">${err.message}</div></div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Run Tests';
+  }
 }
 
 function renderTestResults(result) {
@@ -78,18 +100,27 @@ function updateEntropyMeter(result) {
 async function encryptMessage() {
   const message = document.getElementById('messageInput').value;
   if (!message) return;
-  const data = await apiCall('/encrypt', {
-    method: 'POST',
-    body: JSON.stringify({ message }),
-  });
-  if (data.error) { console.error(data.error); return; }
-  document.getElementById('resultKey').textContent = data.encryptionKey.slice(0, 32) + '...';
-  document.getElementById('resultCiphertext').textContent = data.encrypted.ciphertext.slice(0, 48) + '...';
-  document.getElementById('resultAuthTag').textContent = data.encrypted.authTag;
-  document.getElementById('resultDecrypted').textContent = data.decrypted;
-  const integrityEl = document.getElementById('resultIntegrity');
-  integrityEl.textContent = data.match ? 'PASS' : 'FAIL';
-  integrityEl.className = data.match ? 'pass' : 'fail';
+  const btn = document.getElementById('encryptBtn');
+  btn.disabled = true;
+  btn.textContent = 'Encrypting...';
+  try {
+    const data = await apiCall('/encrypt', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+    document.getElementById('resultKey').textContent = data.encryptionKey.slice(0, 32) + '...';
+    document.getElementById('resultCiphertext').textContent = data.encrypted.ciphertext.slice(0, 48) + '...';
+    document.getElementById('resultAuthTag').textContent = data.encrypted.authTag;
+    document.getElementById('resultDecrypted').textContent = data.decrypted;
+    const integrityEl = document.getElementById('resultIntegrity');
+    integrityEl.textContent = data.match ? 'PASS' : 'FAIL';
+    integrityEl.className = data.match ? 'pass' : 'fail';
+  } catch (err) {
+    document.getElementById('resultDecrypted').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Encrypt';
+  }
 }
 
 async function checkStatus() {
@@ -98,13 +129,25 @@ async function checkStatus() {
     const dot = document.getElementById('statusDot');
     const text = document.getElementById('statusText');
     dot.className = 'status-dot online';
-    text.textContent = data.dbConnected ? 'Online' : 'Online (no DB)';
+    text.textContent = 'Online';
     document.getElementById('qiskitBackend').textContent = data.qiskitConfigured ? 'Configured' : 'Not configured';
     document.getElementById('qiskitStatus').textContent = data.qiskitConfigured ? 'Ready' : 'Simulator only';
   } catch (err) {
-    document.getElementById('statusDot').className = 'status-dot error';
+    const dot = document.getElementById('statusDot');
+    dot.className = 'status-dot error';
     document.getElementById('statusText').textContent = 'Error';
   }
+}
+
+async function listQiskitBackends() {
+  try {
+    const data = await apiCall('/qiskit/backends');
+    if (!data.configured) {
+      document.getElementById('qiskitBackend').textContent = 'Not configured';
+      return;
+    }
+    document.getElementById('qiskitBackend').textContent = (data.backends || []).join(', ') || 'None available';
+  } catch {}
 }
 
 function toggleStream() {
@@ -129,4 +172,6 @@ document.getElementById('encryptBtn').addEventListener('click', encryptMessage);
 document.getElementById('streamBtn').addEventListener('click', toggleStream);
 
 checkStatus();
-setInterval(checkStatus, 10000);
+setInterval(checkStatus, 15000);
+listQiskitBackends();
+setInterval(listQiskitBackends, 30000);

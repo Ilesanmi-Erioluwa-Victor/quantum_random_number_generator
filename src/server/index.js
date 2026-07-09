@@ -6,6 +6,13 @@ import apiRouter from './routes/api.js';
 
 config();
 
+process.on('unhandledRejection', (err) => {
+  console.warn('Unhandled rejection (caught):', err.message);
+});
+process.on('uncaughtException', (err) => {
+  console.warn('Uncaught exception (caught):', err.message);
+});
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -28,6 +35,6 @@ async function start() {
   });
 }
 
-start().catch(console.error);
+start();
 
 export default app;

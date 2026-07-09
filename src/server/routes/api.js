@@ -13,6 +13,19 @@ import { QiskitJob } from '../../db/models/QiskitJob.js';
 
 const router = Router();
 
+router.get('/qiskit/backends', async (req, res) => {
+  try {
+    const bridge = new QiskitBridge();
+    if (!bridge.isConfigured) {
+      return res.json({ configured: false, backends: [] });
+    }
+    const backends = await bridge.listBackends();
+    res.json({ configured: true, backends: backends.map(b => b.name) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/status', (req, res) => {
   res.json({
     status: 'online',
@@ -30,11 +43,18 @@ router.post('/generate', async (req, res) => {
     if (source === 'qiskit') {
       const bridge = new QiskitBridge();
       if (!bridge.isConfigured) {
-        return res.status(400).json({ error: 'IBM Quantum not configured' });
+        return res.status(400).json({ error: 'IBM Quantum not configured. Set IBMQ_API_KEY and IBMQ_INSTANCE in env.' });
       }
-      const result = await bridge.generateBits(n);
-      bits = result.bits;
-      metadata = { nQubits: result.nQubits, shots: result.shots, jobId: result.jobId };
+      try {
+        const result = await bridge.generateBits(n);
+        bits = result.bits;
+        metadata = { nQubits: result.nQubits, shots: result.shots, jobId: result.jobId };
+      } catch (qErr) {
+        if (qErr.message.includes('403') || qErr.message.includes('not authorized')) {
+          return res.status(403).json({ error: 'Access denied to backend. Try a different backend or check your IBM Quantum plan.', hint: 'Use GET /api/qiskit/backends to list available backends' });
+        }
+        throw qErr;
+      }
     } else {
       const qrng = new SimulatedQRNG();
       bits = qrng.generateBits(n);
